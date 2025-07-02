@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Plants vs Zombies 1 - Klon</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      background: #000; overflow: hidden;
+      font-family: "Comic Sans MS", cursive, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    #loadingScreen {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: #1a1a1a;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    #loadingScreen h1 {
+        font-size: 3em;
+    }
+    #loadingProgress {
+        font-size: 1.5em;
+        margin-top: 20px;
+    }
+
+    #menu, #game, #customLevelScreen {
+        width: 100%;
+        height: 100%;
+        display: none;
+    }
+    #menu {
+      background: url('https://i.imgur.com/YuotNNj.jpeg') no-repeat center/cover;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    #menu h1 { color:#FFF; text-shadow: 2px 2px 5px #000; font-size: 3em; }
+    #levelSelection button {
+      font-size: 1.5em; padding: 15px 40px; margin: 10px; cursor: pointer;
+      background: #4CAF50; color: white; border: 3px solid #2e7d32;
+      border-radius: 15px; box-shadow: 0 5px #1b5e20; transition: all 0.1s;
+    }
+    #levelSelection button:hover { background: #388E3C; }
+    #levelSelection button:active { box-shadow: 0 2px #1b5e20; transform: translateY(3px); }
+
+    /* STYLE DLA EKRANU CUSTOM */
+    #customLevelScreen {
+        position: fixed; top: 0; left: 0; background: #1f1d1d; color: white;
+        flex-direction: column; justify-content: flex-start;
+        align-items: center; z-index: 1002; overflow-y: auto;
+        padding: 20px; box-sizing: border-box;
+    }
+    #customLevelScreen h2 {
+        font-size: 2.5em; color: #ffc107; text-shadow: 1px 1px 3px #000; margin-bottom: 20px;
+    }
+    .custom-options {
+        display: flex; flex-direction: column; gap: 20px; max-width: 800px; width: 100%;
+    }
+    .custom-options fieldset {
+        border: 2px solid #555; border-radius: 10px; padding: 15px 20px; background: rgba(0,0,0,0.2);
+    }
+    .custom-options legend {
+        font-size: 1.5em; font-weight: bold; color: #4CAF50; padding: 0 10px;
+    }
+    .custom-options label {
+        font-size: 1.2em; margin-right: 15px; display: inline-block;
+    }
+    .custom-options input[type="number"] {
+        width: 80px; font-size: 1.1em;
+        user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text;
+    }
+    .option-group {
+        display: flex; gap: 20px; align-items: flex-start; justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    
+    #zombieSelection {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 15px;
+    }
+    #zombieSelection::-webkit-scrollbar { height: 8px; }
+    #zombieSelection::-webkit-scrollbar-track { background: #222; border-radius: 4px; }
+    #zombieSelection::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+    #zombieSelection::-webkit-scrollbar-thumb:hover { background: #777; }
+
+    .image-choice {
+        display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        padding: 10px; border: 3px solid transparent; border-radius: 10px;
+        transition: all 0.2s ease-in-out;
+    }
+    .image-choice input { display: none; }
+    .image-choice img {
+        height: 100px; width: 100px; object-fit: contain; margin-bottom: 10px;
+    }
+    .image-choice .lawn-preview {
+        height: 80px; width: 140px; border-radius: 8px; background-size: cover;
+        background-position: center; margin-bottom: 10px; border: 2px solid #666;
+    }
+    .image-choice span { font-size: 1.1em; text-align: center; }
+    .image-choice input:checked ~ img,
+    .image-choice input:checked ~ .lawn-preview { box-shadow: 0 0 15px #4CAF50; }
+    .image-choice input:checked ~ span { color: #4CAF50; font-weight: bold; }
+    .image-choice:hover { background-color: rgba(255, 255, 255, 0.1); }
+    
+    .image-choice.locked { cursor: not-allowed; opacity: 0.7; }
+    .image-choice.locked:hover { background-color: transparent; }
+    .image-choice.locked img { filter: brightness(0); }
+    .image-choice.locked .lawn-preview { 
+        background-image: none !important; 
+        background-color: #000; 
+    }
+    
+    #zombieSettingsList {
+        display: flex; flex-direction: column; gap: 15px; align-items: center; padding-top: 10px;
+    }
+    .zombie-settings-row {
+        display: flex; flex-direction: column; gap: 8px;
+        border-top: 1px solid #444; padding-top: 15px; width: 100%;
+        max-width: 450px;
+    }
+    .zombie-settings-row > div {
+        display: flex; align-items: center; gap: 15px; justify-content: center;
+    }
+    .zombie-settings-row label {
+        flex: 1; text-align: right; font-size: 1.2em; color: #ddd;
+    }
+    .zombie-settings-row input[type="number"] {
+        width: 60px; font-size: 1.2em; text-align: center;
+        border: 1px solid #777; background: #333; color: white;
+    }
+    .zombie-settings-row input[type="radio"] { margin-left: 5px; }
+    .zombie-settings-row .timer-input { display: none; }
+    .zombie-settings-row .timer-options label { text-align: left; }
+
+
+    .custom-controls {
+        margin-top: 30px; display: flex; gap: 20px;
+    }
+    #customLevelScreen button {
+        font-size: 1.8em; padding: 15px 35px; cursor: pointer;
+        border-radius: 15px; border: none; transition: all 0.2s ease;
+        color: white; text-shadow: 1px 1px 2px #000;
+    }
+    #startCustomGameBtn {
+        background: #4CAF50; box-shadow: 0 5px #2e7d32;
+    }
+    #startCustomGameBtn:hover {
+        background: #5cb85c;
+    }
+    #startCustomGameBtn:active {
+        box-shadow: 0 2px #2e7d32; transform: translateY(3px);
+    }
+    #backToMenuFromCustomBtn {
+        background: #6c757d; box-shadow: 0 5px #4a4e52;
+    }
+    #backToMenuFromCustomBtn:hover {
+        background: #868e96;
+    }
+    #backToMenuFromCustomBtn:active {
+        box-shadow: 0 2px #4a4e52; transform: translateY(3px);
+    }
+    
+    #customAlert {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 10000; display: none; justify-content: center; align-items: center;
+    }
+    .alert-backdrop {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
+    }
+    .alert-box {
+      position: relative; z-index: 1; background: #3a2d21;
+      border: 5px solid #8b4513; border-radius: 20px; padding: 30px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.5); text-align: center;
+      max-width: 500px; width: 90%; color: white;
+    }
+    .alert-box h3 {
+      font-size: 2em; color: #ffc107; margin: 0 0 15px;
+    }
+    .alert-box p {
+      font-size: 1.3em; margin: 0 0 25px;
+    }
+    .alert-box button {
+      font-size: 1.5em; padding: 10px 30px; cursor: pointer;
+      background: #4CAF50; color: white; border: 3px solid #2e7d32;
+      border-radius: 15px; box-shadow: 0 5px #1b5e20; transition: all 0.1s;
+    }
+    .alert-box button:active { box-shadow: 0 2px #1b5e20; transform: translateY(3px); }
+
+
+    #game { position: relative; overflow: hidden; }
+    #panContainer {
+        position: absolute; width: 200%; height: 100%; display: flex;
+        transform: translateX(0); transition: transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    }
+    #panContainer.pan-right { transform: translateX(-50%); }
+
+    #panGameView {
+        width: 50%; height: 100%; position: relative;
+        background-image: url('https://i.imgur.com/QMvxte5.jpeg');
+        background-size: cover; background-position: center;
+    }
+
+    #panZombieView {
+        width: 50%; height: 100%; position: relative; background-color: #000;
+        background-image: url('https://i.imgur.com/398bA3t.jpeg');
+        background-size: contain; background-position: center; background-repeat: no-repeat;
+    }
+
+    #zombiePreview {
+      width: 100%; height: 100%; display: flex;
+      justify-content: center; align-items: center;
+    }
+
+    #zombiePreview .zombie-list { display: flex; flex-direction: column; gap: 20px; }
+    #zombiePreview img { height: 240px; width: auto; object-fit: contain; }
+
+    #fullscreenRequest {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85); color: white; display: none;
+        flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1000; text-align: center;
+    }
+    #fullscreenRequest h2 { font-size: 3em; color: #ffc107; text-shadow: 2px 2px 4px #000; }
+    #fullscreenRequest p { font-size: 1.5em; max-width: 600px; }
+    #fullscreenRequest button {
+        font-size: 2em; padding: 20px 50px; margin-top: 30px; cursor: pointer;
+        background: #4CAF50; color: white; border: 3px solid #2e7d32;
+        border-radius: 15px; box-shadow: 0 5px #1b5e20;
+    }
+
+    #sunPoints {
+      position: absolute;
+      top: 105px; 
+      left: 10px;
+      width: 170px; 
+      padding: 8px;
+      box-sizing: border-box;
+      font-size: 24px;
+      color: yellow;
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 1px 1px 2px black;
+      background: rgba(0,0,0,0.4);
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+    }
+    #grid {
+      position: absolute; top: 75px; left: 45px; right: 45px; bottom: 15px;
+      display: grid; grid-template-rows: repeat(5, 1fr); grid-template-columns: repeat(9, 1fr); gap: 1px;
+    }
+    .grid-cell {
+      border: 1px solid transparent; transition: border-color 0.2s ease-in-out;
+      position: relative; cursor: pointer;
+    }
+    #grid.placing .grid-cell { border-color: rgba(255,255,255,0.2); }
+    #grid.shoveling .grid-cell:has(.plant) { cursor: url('https://i.ibb.co/tp3WX5Pt/Shovel2.jpeg'), auto; border-color: rgba(255, 0, 0, 0.5); }
+    .grid-cell.disabled { cursor: not-allowed; background: rgba(255, 0, 0, 0.2); }
+
+    .plant, .zombie, .sun, .explosion, .bowling-nut { position: absolute; }
+    
+    .zombie {
+        pointer-events: none;
+        transition: filter 0.3s ease-in-out;
+    }
+
+    .debug-hitbox {
+        position: absolute;
+        background: rgba(255, 0, 0, 0.4);
+        border: 1px solid red;
+        z-index: 100;
+        pointer-events: none;
+    }
+
+
+    .bullet {
+      position: absolute; width: 50px; height: 50px;
+      background-size: contain; background-repeat: no-repeat; background-position: center;
+    }
+
+    #plantSelector, #bowlingNutConveyor {
+        position: absolute; top: 10px; left: 10px; display: flex; gap: 10px;
+        background: rgba(0,0,0,0.4); padding: 5px; border-radius: 10px;
+    }
+    .plant-card, .bowling-nut-card {
+        width: 80px; height: 80px; border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer;
+        transition: all 0.2s; background-size: contain; background-repeat: no-repeat;
+        background-position: center; position: relative; overflow: hidden;
+    }
+    .plant-card .cost {
+        position: absolute; bottom: 2px; right: 5px; color: yellow; font-weight: bold;
+        text-shadow: 1px 1px 1px black;
+    }
+    .plant-card.disabled, .bowling-nut-card.disabled { filter: grayscale(100%); cursor: not-allowed; border-color: gray; }
+    .plant-card.active, .bowling-nut-card.active { filter: brightness(0.7); border-color: yellow; cursor: crosshair; }
+    .cooldown-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);
+        pointer-events: none; transition: height 0.1s linear;
+    }
+    #shovel {
+        position: absolute; top: 10px; right: 10px; width: 80px; height: 80px;
+        background: url('https://i.ibb.co/tp3WX5Pt/Shovel2.jpeg') no-repeat center/contain;
+        border: 2px solid #a9a9a9; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+    }
+    #shovel.active { border-color: #ffcc00; box-shadow: 0 0 15px #ffcc00; }
+
+    #progressContainer {
+      position: absolute; bottom: 20px; right: 20px; width: 300px; height: 30px;
+      background: rgba(0, 0, 0, 0.5); border-radius: 15px; border: 2px solid #555;
+    }
+    #progressBar {
+      width: 0%; height: 100%; background: #8B4513; border-radius: 12px;
+      transition: width 1s linear;
+    }
+    .wave-flag {
+        position: absolute; bottom: 25px; transform: translateX(-50%); width: 30px; height: 40px;
+        background: url('https://i.imgur.com/KGDYd1w.png') no-repeat center/contain; z-index: 20;
+    }
+
+    #winScreen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); color: white; display: none;
+      flex-direction: column; justify-content: center; align-items: center; z-index: 1001;
+    }
+
+    #winScreen h2 { font-size: 4em; text-shadow: 3px 3px 10px #0F0; }
+    #winScreen p { font-size: 1.5em; }
+    #winScreen button {
+      font-size: 2em; padding: 10px 30px; margin-top: 20px; cursor: pointer;
+      background: #4CAF50; color: white; border: none; border-radius: 10px;
+      box-shadow: 0 0 10px #2e7d32; transition: background 0.3s;
+    }
+    #winScreen button:hover { background: #388E3C; }
+
+    .sun {
+        width: 120px; height: 120px; background: url('https://i.ibb.co/SXKRkN8n/Sun-PvZ2.jpeg') no-repeat center/contain;
+        cursor: pointer; transition: transform 0.2s;
+    }
+    .sun:hover { transform: scale(1.1); }
+    .explosion {
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,165,0,0.8) 0%, rgba(255,69,0,0.5) 50%, rgba(255,0,0,0) 70%);
+        animation: boom 0.4s forwards;
+    }
+    @keyframes boom {
+        from { transform: scale(0.1); opacity: 1; }
+        to { transform: scale(1); opacity: 0; }
+    }
+    .sun.from-plant { animation: pop-out 0.5s ease-out forwards; }
+    @keyframes pop-out {
+        from { transform: scale(0.2) translateY(15px); opacity: 0; }
+        to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    #waveAnnouncement {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        font-size: 3.5em; color: red; font-weight: bold; text-shadow: 3px 3px 5px #000;
+        text-align: center; opacity: 0; transition: opacity 0.5s ease-in-out;
+        z-index: 90; pointer-events: none;
+    }
+    #waveAnnouncement.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="loadingScreen">
+    <h1>Ładowanie Gry...</h1>
+    <p id="loadingProgress">0%</p>
+  </div>
+
+  <div id="menu"><h1>Plants vs Zombies - Klon</h1><div id="levelSelection"></div></div>
+
+  <div id="customLevelScreen">
+    <h2>Dzień Niestandardowy - Ustawienia</h2>
+    <div class="custom-options">
+      <fieldset>
+        <legend>Wybierz Zombie</legend>
+        <div class="option-group" id="zombieSelection">
+          <!-- Generowane dynamicznie przez JS -->
+        </div>
+      </fieldset>
+      
+      <fieldset id="zombieSettingsContainer" style="display: none;">
+        <legend>Ustawienia Wybranych Zombie</legend>
+        <div id="zombieSettingsList">
+          <!-- Dynamicznie generowane pola dla wybranych zombie -->
+        </div>
+      </fieldset>
+      
+      <fieldset>
+        <legend>Ustawienia Roślin</legend>
+        <div class="option-group">
+            <label><input type="checkbox" id="plantCooldowns" checked> Aktywne czasy odnowienia</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ustawienia Słońca</legend>
+        <div class="option-group">
+          <label for="customSun">Początkowe słońca:</label>
+          <input type="number" id="customSun" value="50" min="0" step="25">
+          <label><input type="checkbox" id="unlimitedSun"> Nieskończone słońca</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Czas Trwania Dnia</legend>
+        <div class="option-group">
+          <label for="customDuration">Czas w sekundach:</label>
+          <input type="number" id="customDuration" value="150" min="30" step="10">
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Układ Trawnika</legend>
+        <div class="option-group" id="lawnSelection">
+            <!-- Generowane dynamicznie przez JS -->
+        </div>
+      </fieldset>
+    </div>
+    <div class="custom-controls">
+      <button id="startCustomGameBtn">Start Gry</button>
+      <button id="backToMenuFromCustomBtn">Powrót do Menu</button>
+    </div>
+  </div>
+
+  <div id="game">
+    <div id="panContainer">
+        <div id="panGameView">
+            <div id="plantSelector"></div>
+            <div id="bowlingNutConveyor" style="display:none;"></div>
+            <div id="sunPoints">Słońca: 50</div>
+            <div id="shovel" style="display:none;" title="Łopata - wykop roślinę"></div>
+            <div id="grid"></div>
+            <div id="waveAnnouncement"></div>
+            <div id="progressContainer"><div id="progressBar"></div></div>
+        </div>
+        <div id="panZombieView">
+            <div id="zombiePreview">
+                <div class="zombie-list"></div>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <div id="winScreen"><h2 id="winTitle"></h2><p id="winMessage"></p><button id="backToMenuBtn">Powrót do Menu</button></div>
+  <div id="fullscreenRequest">
+    <h2>Wymagany Tryb Pełnoekranowy</h2>
+    <p>Gra została zapauzowana. Dla najlepszych wrażeń i poprawnego działania, gra wymaga przejścia do trybu pełnoekranowego. Kliknij przycisk poniżej, aby kontynuować.</p>
+    <button id="fullscreenBtn">Włącz Pełny Ekran</button>
+  </div>
+  <div id="customAlert">
+    <div class="alert-backdrop"></div>
+    <div class="alert-box">
+      <h3 id="alertTitle"></h3>
+      <p id="alertMessage"></p>
+      <button id="alertCloseBtn">OK</button>
+    </div>
+  </div>
+
+  <script>
+    const DEBUG_MODE = false; // Zmień na true, aby zobaczyć hitboxy
+
+    // --- KONFIGURACJA GRY ---
+    const plantData = {
+        peashooter: { cost: 100, hp: 300, type: 'shooter', cooldown: 90, recharge: 450, image: 'https://i.ibb.co/Lh9vdVC7/Peashooteringamerender.jpeg' },
+        sunflower: { cost: 50, hp: 300, type: 'producer', cooldown: 600, recharge: 450, image: 'https://i.ibb.co/tTNf0Vq2/Da-Sunflower.jpeg' },
+        cherrybomb: { cost: 150, hp: 9999, type: 'bomb', cooldown: 0, recharge: 2100, image: 'https://i.ibb.co/r1mY2rx/Pv-Z-Pictures-doc2.jpeg' },
+        wallnut: {
+            cost: 50, hp: 3000, type: 'wall', cooldown: 0, recharge: 1800,
+            image: 'https://i.ibb.co/bR30dVNq/Wallnut-body.png',
+            cracked1_image: 'https://i.ibb.co/JWJGngYy/Wallnut-cracked1.jpeg',
+            cracked2_image: 'https://i.ibb.co/23rSTgst/Wallnut-cracked2.jpeg'
+        },
+        potatomine: {
+            cost: 25, hp: 300, type: 'mine', cooldown: 0, recharge: 1800,
+            image: 'https://i.ibb.co/mr8QMDHB/Unarmed-Potato-Mine-removebg-preview.jpeg',
+            card_image: 'https://i.ibb.co/8LDpf40j/Potatomineingamerender.jpeg',
+            armed_image: 'https://i.ibb.co/8LDpf40j/Potatomineingamerender.jpeg',
+            armingTime: 420
+        },
+        snowpeashooter: { 
+            cost: 175, hp: 300, type: 'shooter', projectileType: 'snow', cooldown: 90, recharge: 450, 
+            image: 'https://i.ibb.co/DfHfL20J/Snowpeaingamerender.jpeg'
+        },
+        explodonut: { image: 'https://i.ibb.co/5xzWqP6h/HDExplode-o-nut.jpeg' }
+    };
+    
+    const zombieData = {
+        normal: { 
+            name: 'Zwykły', hp: 180, image: 'https://i.ibb.co/8n4d8CmG/PVZ-Zombie-Suit.jpeg', weight: 8, unlockLevel: 1,
+            hitbox: { x: 20, y: 15, width: 40, height: 110 } 
+        },
+        conehead: { 
+            name: 'Z Czepkiem', hp: 360, image: 'https://i.ibb.co/zWRGbDBm/Cone-Head-Zombie.jpeg', weight: 2, unlockLevel: 3,
+            hitbox: { x: 20, y: 15, width: 40, height: 110 } 
+        },
+        polevaulter: {
+            name: 'Tyczkarz', hp: 180,
+            image: 'https://i.ibb.co/rGgvspqy/Polevaulter0001.jpeg',
+            imageNoPole: 'https://i.ibb.co/VpqmHt2T/Polevaulter0094.jpeg',
+            weight: 0.4,
+            unlockLevel: 6,
+            hitbox_pole: { x: 195, y: 50, width: 20, height: 90 },
+            hitbox_no_pole: { x: 20, y: 15, width: 40, height: 110 }
+        }
+    };
+
+    const defaultZombiePool = {
+        normal: 60,
+        conehead: 30,
+        polevaulter: 10
+    };
+
+    const levels = [
+        { level: 1, background: 'https://i.imgur.com/QMvxte5.jpeg', allowedRows: [2], unlocks: 'sunflower', gameMode: 'normal' },
+        { level: 2, background: 'https://i.imgur.com/YETVUEh.jpeg', allowedRows: [1, 2, 3], unlocks: 'cherrybomb', gameMode: 'normal' },
+        { level: 3, background: 'https://i.imgur.com/YETVUEh.jpeg', allowedRows: [1, 2, 3], unlocks: 'wallnut', gameMode: 'normal' },
+        { level: 4, background: 'https://i.imgur.com/OtpGWPD.jpeg', allowedRows: [0, 1, 2, 3, 4], unlocks: 'shovel', gameMode: 'normal' },
+        { level: 5, background: 'https://i.imgur.com/ZxgX67o.jpeg', allowedRows: [0, 1, 2, 3, 4], unlocks: 'potatomine', gameMode: 'bowling' },
+        { level: 6, background: 'https://i.imgur.com/OtpGWPD.jpeg', allowedRows: [0, 1, 2, 3, 4], unlocks: 'snowpeashooter', gameMode: 'normal' }
+    ];
+
+    // --- ELEMENTY DOM ---
+    const loadingScreen = document.getElementById('loadingScreen');
+    const menu = document.getElementById('menu'), levelSelection = document.getElementById('levelSelection');
+    const game = document.getElementById('game'), sunPointsEl = document.getElementById('sunPoints');
+    const grid = document.getElementById('grid'), plantSelector = document.getElementById('plantSelector');
+    const winScreen = document.getElementById('winScreen'), backToMenuBtn = document.getElementById('backToMenuBtn');
+    const shovelEl = document.getElementById('shovel'), bowlingNutConveyor = document.getElementById('bowlingNutConveyor');
+    const waveAnnouncementEl = document.getElementById('waveAnnouncement');
+    const progressContainer = document.getElementById('progressContainer');
+    const panContainer = document.getElementById('panContainer');
+    const panGameView = document.getElementById('panGameView');
+    const panZombieView = document.getElementById('panZombieView');
+    const zombieList = document.querySelector("#zombiePreview .zombie-list");
+    const fullscreenRequestEl = document.getElementById('fullscreenRequest');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const customLevelScreen = document.getElementById('customLevelScreen');
+    const startCustomGameBtn = document.getElementById('startCustomGameBtn');
+    const backToMenuFromCustomBtn = document.getElementById('backToMenuFromCustomBtn');
+    const customAlert = document.getElementById('customAlert');
+    const alertTitleEl = document.getElementById('alertTitle');
+    const alertMessageEl = document.getElementById('alertMessage');
+    const alertCloseBtn = document.getElementById('alertCloseBtn');
+    let alertCallback = null;
+
+
+    // --- STAN GRY ---
+    let DEFAULT_LEVEL_DURATION_SECONDS = 160; 
+    let LEVEL_DURATION_SECONDS;
+    const COLS = 9, ZOMBIE_EAT_DAMAGE_PER_SECOND = 100;
+    const ZOMBIE_SPEED = 0.6;
+    const JUMP_DURATION_FRAMES = 75; 
+    const JUMP_HEIGHT = 60; 
+    const RANDOM_ZOMBIE_SOUND_COOLDOWN_FRAMES = 600;
+    const DEFAULT_SPAWN_INTERVAL = 12000;
+    const SLOW_DURATION_FRAMES = 300;
+    const ZOMBIE_GRACE_PERIOD = 12000;
+    const INITIAL_SPAWN_INTERVAL = 20000; 
+    const DIFFICULTY_RAMP_UP_TIME = 30;
+
+    let menuMusic = new Audio('https://files.catbox.moe/hqfs34.mp3'); menuMusic.loop = true;
+    let gameMusic = new Audio('https://files.catbox.moe/1gx6ir.mp3'); gameMusic.loop = true;
+    let introMusic = new Audio('https://files.catbox.moe/sa188i.mp3');
+    let peaHitSound = new Audio('https://files.catbox.moe/2ljttm.mp3');
+    let peaHitSoundCritical = new Audio('https://files.catbox.moe/acvavn.mp3');
+    let peaHitSoundSuperCritical = new Audio('https://files.catbox.moe/1p7als.mp3');
+    let zombieGroanSound = new Audio('https://files.catbox.moe/fsd5bf.mp3');
+    let randomZombieSound = new Audio('https://files.catbox.moe/pifrxf.mp3');
+    let waveAlertSound = new Audio('https://files.catbox.moe/vo4vba.mp3');
+    let peashooterSound1 = new Audio('https://files.catbox.moe/g3rvyt.mp3');
+    let peashooterSound2 = new Audio('https://files.catbox.moe/ftepte.mp3');
+    let snowHitSound = new Audio('https://files.catbox.moe/z6hliz.mp3');
+
+    let sunPoints, plants, zombies, bullets, bowlingNuts, bowlingNutQueue, currentLevel;
+    let gameState = 'loading';
+    let previousGameState = '';
+    let introStartTime, timeElapsedOnPause = 0;
+    let placingPlantType = null, placingNutIndex = null, plantCardCooldowns = {}, isShoveling = false;
+    let elapsedTime, waveFlags, isFinalWave, intervals = {};
+    let maxLevelUnlocked, unlockedPlants, unlockedShovel;
+    let firstZombieSpawned, randomZombieSoundCooldown;
+
+    // --- LOGIKA PEŁNEGO EKRANU i PAUZY ---
+    function pauseGame() {
+        if (gameState === 'paused' || gameState === 'menu' || gameState === 'finished' || gameState === 'loading') return;
+        previousGameState = gameState;
+        if (gameState === 'intro') {
+            timeElapsedOnPause += Date.now() - introStartTime;
+        }
+        gameState = 'paused';
+
+        gameMusic.pause();
+        introMusic.pause();
+
+        if (intervals.gameLoop) cancelAnimationFrame(intervals.gameLoop);
+        Object.values(intervals).forEach(id => clearTimeout(id));
+        intervals = {};
+    }
+
+    function resumeGame() {
+        if (gameState !== 'paused') return;
+
+        const stateToResume = previousGameState;
+        previousGameState = '';
+        gameState = stateToResume;
+
+        if (stateToResume === 'intro') {
+            introMusic.play();
+            runIntroSequence(timeElapsedOnPause);
+        } else if (stateToResume === 'playing') {
+            gameMusic.play();
+            startAllIntervals();
+        }
+    }
+    
+    function startAllIntervals() {
+        if (intervals.gameLoop) return;
+
+        intervals.gameLoop = requestAnimationFrame(gameLoop);
+        
+        if (!isFinalWave) {
+             intervals.timer = setInterval(updateTimer, 1000);
+             
+             intervals.initialZombieSpawn = setTimeout(() => {
+                if (gameState !== 'playing') return;
+                triggerFirstZombieSpawn();
+             }, ZOMBIE_GRACE_PERIOD);
+        }
+
+        if (currentLevel.gameMode === 'normal' && !currentLevel.customSettings?.unlimitedSun) {
+            intervals.sun = setInterval(spawnSun, 10000);
+        }
+        if (currentLevel.gameMode === 'bowling') {
+             intervals.bowlingNut = setInterval(() => {
+                if (bowlingNutQueue.length < 5) {
+                    bowlingNutQueue.push(Math.random() < 0.25 ? 'explodonut' : 'wallnut');
+                }
+                updateBowlingNutConveyor();
+            }, 4500);
+        }
+    }
+    
+    function scheduleNextZombieSpawn(pool) {
+        if (gameState !== 'playing' || isFinalWave) return;
+
+        const isEarlyGame = elapsedTime < DIFFICULTY_RAMP_UP_TIME && currentLevel.level !== 'Custom';
+        const spawnDelay = isEarlyGame ? INITIAL_SPAWN_INTERVAL : DEFAULT_SPAWN_INTERVAL;
+
+        intervals.zombieSpawner = setTimeout(() => {
+            spawnZombie(pool);
+            scheduleNextZombieSpawn(pool); 
+        }, spawnDelay);
+    }
+
+    function triggerFirstZombieSpawn() {
+        if (currentLevel.customSettings?.zombieTimers) {
+            const { zombieTimers, zombieWeights } = currentLevel.customSettings;
+            const defaultTimedZombies = {};
+            
+            currentLevel.customSettings.defaultZombiePool = {};
+
+            for (const type in zombieTimers) {
+                if (zombieTimers[type] !== 'default') {
+                    const intervalTime = zombieTimers[type] * 1000;
+                    intervals[`zombie_${type}`] = setInterval(() => spawnSpecificZombie(type), intervalTime);
+                } else {
+                    defaultTimedZombies[type] = zombieWeights[type];
+                }
+            }
+            
+            currentLevel.customSettings.defaultZombiePool = defaultTimedZombies;
+
+            if (Object.keys(defaultTimedZombies).length > 0) {
+                scheduleNextZombieSpawn(defaultTimedZombies);
+            }
+        } else {
+            scheduleNextZombieSpawn();
+        }
+    }
+
+
+    function checkFullscreen() {
+        const isFullscreen = !!document.fullscreenElement;
+        if (isFullscreen) {
+            fullscreenRequestEl.style.display = 'none';
+            if (gameState === 'paused') {
+                resumeGame();
+            }
+        } else {
+            if (gameState === 'playing' || gameState === 'intro' || gameState === 'paused') {
+                fullscreenRequestEl.style.display = 'flex';
+                if (gameState !== 'paused') {
+                    pauseGame();
+                }
+            }
+        }
+    }
+
+    fullscreenBtn.addEventListener('click', () => {
+        document.documentElement.requestFullscreen();
+    });
+
+    document.addEventListener('fullscreenchange', checkFullscreen);
+
+    function requestFullscreenAndStart(levelConfig) {
+        if (document.fullscreenElement) {
+            startGame(levelConfig);
+            return;
+        }
+        document.documentElement.requestFullscreen()
+            .then(() => {
+                startGame(levelConfig);
+            })
+            .catch(() => {
+                showAlert('Błąd', "Tryb pełnoekranowy jest wymagany do rozpoczęcia gry. Proszę zezwolić na pełny ekran i spróbować ponownie.");
+            });
+    }
+
+    // --- GŁÓWNE FUNKCJE GRY ---
+    function loadProgress() {
+        maxLevelUnlocked = parseInt(localStorage.getItem('pvz_maxLevel')) || 1;
+        const savedPlants = localStorage.getItem('pvz_unlockedPlants');
+        unlockedPlants = savedPlants ? JSON.parse(savedPlants) : ['peashooter'];
+        unlockedShovel = JSON.parse(localStorage.getItem('pvz_unlockedShovel')) || false;
+    }
+
+    function initMenu() {
+        gameState = 'menu';
+        gameMusic.pause(); gameMusic.currentTime = 0;
+        introMusic.pause(); introMusic.currentTime = 0;
+        menuMusic.play().catch(e => console.error("Błąd odtwarzania muzyki w menu:", e));
+
+        game.style.display = 'none';
+        loadingScreen.style.display = 'none';
+        customLevelScreen.style.display = 'none';
+        menu.style.display = 'flex';
+        fullscreenRequestEl.style.display = 'none';
+        winScreen.style.display = 'none';
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        }
+
+        levelSelection.innerHTML = '';
+        loadProgress();
+        for (let i = 1; i <= maxLevelUnlocked; i++) {
+            const levelConf = levels.find(l => l.level === i);
+            if(levelConf) {
+                const btn = document.createElement('button');
+                btn.textContent = `Poziom ${i}`;
+                btn.onclick = () => requestFullscreenAndStart(levels.find(l => l.level === i));
+                levelSelection.appendChild(btn);
+            }
+        }
+        
+        if (maxLevelUnlocked > 3) {
+            const customBtn = document.createElement('button');
+            customBtn.textContent = 'Dzień Niestandardowy';
+            customBtn.onclick = showCustomLevelScreen;
+            levelSelection.appendChild(customBtn);
+        }
+    }
+
+    function showCustomLevelScreen() {
+        menu.style.display = 'none';
+        populateCustomScreen();
+        customLevelScreen.style.display = 'flex';
+    }
+
+    function runIntroSequence(timeOffset = 0) {
+        introStartTime = Date.now();
+
+        const initialDelay = 1000;
+        const panDuration = 2500;
+        const holdDuration = 6000 - panDuration;
+
+        const delay1 = Math.max(0, initialDelay - timeOffset);
+        intervals.intro1 = setTimeout(() => {
+            if(gameState !== 'intro') return;
+            panContainer.classList.add('pan-right');
+        }, delay1);
+
+        const delay2 = Math.max(0, initialDelay + panDuration + holdDuration - timeOffset);
+        intervals.intro2 = setTimeout(() => {
+            if(gameState !== 'intro') return;
+            panContainer.classList.remove('pan-right');
+        }, delay2);
+
+        const delay3 = Math.max(0, initialDelay + panDuration + holdDuration + panDuration - timeOffset);
+        intervals.intro3 = setTimeout(() => {
+            if(gameState !== 'intro') return;
+            gameState = 'playing';
+            introMusic.pause(); introMusic.currentTime = 0;
+            gameMusic.play();
+
+            document.querySelectorAll('#plantSelector, #bowlingNutConveyor, #sunPoints, #shovel, #progressContainer').forEach(el => el.style.visibility = 'visible');
+
+            createGrid();
+            setupWaves();
+            startAllIntervals();
+
+            if (currentLevel.gameMode === 'bowling') {
+                setupBowlingLevel();
+            } else {
+                setupNormalLevel();
+            }
+        }, delay3);
+    }
+
+    function startGame(levelConfig) {
+        currentLevel = levelConfig;
+        if (!currentLevel) return;
+        
+        placingPlantType = null;
+        placingNutIndex = null;
+        isShoveling = false;
+        grid.classList.remove('placing', 'shoveling');
+        shovelEl.classList.remove('active');
+        document.querySelectorAll('.plant-card.active, .bowling-nut-card.active').forEach(c => c.classList.remove('active'));
+        resetGridHighlights();
+        
+        document.querySelectorAll('.plant, .zombie, .bullet, .bowling-nut, .sun, .explosion, .debug-hitbox').forEach(e => e.remove());
+
+        if (currentLevel.customSettings) {
+            LEVEL_DURATION_SECONDS = currentLevel.customSettings.duration;
+            sunPoints = currentLevel.customSettings.sun;
+        } else {
+            LEVEL_DURATION_SECONDS = DEFAULT_LEVEL_DURATION_SECONDS;
+            sunPoints = 50;
+        }
+
+        gameState = 'intro';
+        timeElapsedOnPause = 0;
+
+        menuMusic.pause(); menuMusic.currentTime = 0;
+        gameMusic.pause(); gameMusic.currentTime = 0;
+        introMusic.currentTime = 0;
+        introMusic.play().catch(e => console.error("Błąd odtwarzania muzyki intro:", e));
+
+        plants = []; zombies = []; bullets = []; bowlingNuts = []; bowlingNutQueue = [];
+        plantCardCooldowns = {}; elapsedTime = 0; waveFlags = []; isFinalWave = false;
+        firstZombieSpawned = false; randomZombieSoundCooldown = 0;
+        Object.values(intervals).forEach(id => clearTimeout(id));
+        if (intervals.gameLoop) cancelAnimationFrame(intervals.gameLoop);
+        intervals = {};
+
+        menu.style.display = 'none';
+        customLevelScreen.style.display = 'none';
+        game.style.display = 'block';
+        winScreen.style.display = 'none';
+
+        panGameView.style.backgroundImage = `url('${currentLevel.background}')`;
+        panZombieView.style.backgroundImage = `url('https://i.imgur.com/398bA3t.jpeg'), url('${currentLevel.background}')`;
+
+        document.querySelectorAll('#plantSelector, #bowlingNutConveyor, #sunPoints, #shovel, #progressContainer').forEach(el => el.style.visibility = 'hidden');
+
+        panContainer.classList.remove('pan-right');
+
+        zombieList.innerHTML = '';
+        let zombiesForLevel;
+        if (currentLevel.customSettings?.zombieWeights) {
+            zombiesForLevel = Object.keys(currentLevel.customSettings.zombieWeights);
+        } else {
+            zombiesForLevel = ['normal'];
+            if (currentLevel.level >= 3) zombiesForLevel.push('conehead');
+            if (currentLevel.level >= 6) zombiesForLevel.push('polevaulter');
+        }
+
+        zombiesForLevel.forEach(type => {
+            const img = document.createElement('img');
+            img.src = zombieData[type].image;
+            zombieList.appendChild(img);
+        });
+
+        runIntroSequence();
+    }
+
+    function setupNormalLevel() {
+        plantSelector.style.display = 'flex';
+        bowlingNutConveyor.style.display = 'none';
+        shovelEl.style.display = unlockedShovel ? 'block' : 'none';
+        setupPlantSelector();
+        updateSunPoints();
+    }
+
+    function setupBowlingLevel() {
+        plantSelector.style.display = 'none';
+        bowlingNutConveyor.style.display = 'flex';
+        shovelEl.style.display = 'none';
+        
+        setTimeout(() => {
+            for (let i=0; i<3; i++) {
+                if (bowlingNutQueue.length < 5) {
+                    bowlingNutQueue.push(Math.random() < 0.25 ? 'explodonut' : 'wallnut');
+                }
+            }
+            updateBowlingNutConveyor();
+        }, 500);
+    }
+
+    function gameLoop() {
+        if(gameState !== 'playing') return;
+        updateZombies();
+        updatePlants();
+        updateBullets();
+        if (currentLevel.gameMode === 'bowling') updateBowlingNuts();
+        updateCooldowns();
+        handleRandomZombieSounds();
+        
+        if (placingPlantType) {
+            highlightValidCells();
+        }
+
+        renderAll();
+        if (currentLevel.gameMode === 'normal') updatePlantCards();
+        if (isFinalWave && zombies.length === 0 && bowlingNuts.length === 0) endGame(true);
+        intervals.gameLoop = requestAnimationFrame(gameLoop);
+    }
+
+    function handleRandomZombieSounds() {
+        if (elapsedTime < 15) return;
+        if (randomZombieSoundCooldown > 0) {
+            randomZombieSoundCooldown--;
+            return;
+        }
+        if (zombies.length > 0 && Math.random() < 0.002) {
+            randomZombieSound.play().catch(e => console.error("Błąd odtwarzania losowego dźwięku zombie:", e));
+            randomZombieSoundCooldown = RANDOM_ZOMBIE_SOUND_COOLDOWN_FRAMES;
+        }
+    }
+
+    function updateBowlingNutConveyor() {
+        bowlingNutConveyor.innerHTML = '';
+        bowlingNutQueue.forEach((nutType, index) => {
+            const card = document.createElement('div');
+            card.className = 'bowling-nut-card';
+            card.style.backgroundImage = `url(${plantData[nutType].image})`;
+            card.onclick = () => selectPlantToPlace(nutType, index);
+            bowlingNutConveyor.appendChild(card);
+        });
+    }
+
+    function selectPlantToPlace(plantId, index = null) {
+        if (isShoveling || gameState === 'paused') return;
+        document.querySelectorAll('.plant-card.active, .bowling-nut-card.active').forEach(c => c.classList.remove('active'));
+
+        if (currentLevel.gameMode === 'bowling') {
+            const clickedCardElement = bowlingNutConveyor.children[index];
+            if (placingPlantType === plantId && placingNutIndex === index) {
+                placingPlantType = null;
+                placingNutIndex = null;
+            } else {
+                placingPlantType = plantId;
+                placingNutIndex = index;
+                clickedCardElement?.classList.add('active');
+            }
+        } else {
+            const config = plantData[plantId];
+            const canAfford = currentLevel.customSettings?.unlimitedSun || sunPoints >= config.cost;
+            const cooldownsActive = currentLevel.customSettings?.plantCooldownsActive ?? true;
+            if (!config || (cooldownsActive && plantCardCooldowns[plantId] > 0) || !canAfford) return;
+
+            if (placingPlantType === plantId) {
+                placingPlantType = null;
+            } else {
+                placingPlantType = plantId;
+                plantSelector.querySelector(`[data-plant='${placingPlantType}']`).classList.add('active');
+            }
+        }
+
+        if (placingPlantType) {
+            highlightValidCells();
+            grid.classList.add('placing');
+        } else {
+            resetGridHighlights();
+            grid.classList.remove('placing');
+        }
+    }
+
+    grid.addEventListener('click', e => {
+      if (gameState === 'paused') return;
+      const cell = e.target.closest('.grid-cell');
+      if (!cell) return;
+      const row = parseInt(cell.dataset.row), col = parseInt(cell.dataset.col);
+
+      if (isShoveling) {
+          const plantIndex = plants.findIndex(p => p.row === row && p.col === col);
+          if (plantIndex > -1) { plants.splice(plantIndex, 1); renderAll(); }
+          isShoveling = false;
+          shovelEl.classList.remove('active');
+          grid.classList.remove('shoveling');
+          return;
+      }
+
+      if (!placingPlantType) return;
+      
+      const isOccupied = plants.some(p => p.row === row && p.col === col);
+      if (isOccupied) return;
+
+      if (cell.classList.contains('disabled')) return;
+
+      if (currentLevel.gameMode === 'bowling') {
+          if (placingNutIndex !== null) {
+              bowlingNutQueue.splice(placingNutIndex, 1);
+              updateBowlingNutConveyor();
+              const cellHeight = grid.clientHeight / 5;
+              bowlingNuts.push({
+                  id: Date.now(),
+                  type: placingPlantType,
+                  x: grid.offsetLeft + col * (grid.clientWidth / COLS),
+                  y: grid.offsetTop + row * cellHeight + (cellHeight / 2) - (cellHeight*0.8/2),
+                  speedX: 5,
+                  speedY: 0,
+                  exploded: false,
+                  hitBy: []
+              });
+          } else { return; }
+      } else {
+          const config = plantData[placingPlantType];
+          if (!currentLevel.customSettings?.unlimitedSun) {
+            sunPoints -= config.cost;
+          }
+          updateSunPoints();
+          const cooldownsActive = currentLevel.customSettings?.plantCooldownsActive ?? true;
+          if(cooldownsActive) {
+            plantCardCooldowns[placingPlantType] = config.recharge;
+          }
+          const plantObject = { id: placingPlantType, row, col, hp: config.hp, cooldown: config.cooldown };
+          if (config.type === 'bomb') plantObject.fuse = 120;
+          if (config.type === 'mine') {
+              plantObject.isArmed = false;
+              plantObject.armingProgress = 0;
+          }
+          plants.push(plantObject);
+      }
+
+      placingPlantType = null;
+      placingNutIndex = null;
+      document.querySelector('.plant-card.active')?.classList.remove('active');
+      document.querySelector('.bowling-nut-card.active')?.classList.remove('active');
+      resetGridHighlights();
+      grid.classList.remove('placing');
+    });
+
+    shovelEl.addEventListener('click', () => {
+        if (gameState === 'paused') return;
+        isShoveling = !isShoveling;
+        placingPlantType = null;
+        placingNutIndex = null;
+        shovelEl.classList.toggle('active', isShoveling);
+        grid.classList.toggle('shoveling', isShoveling);
+        resetGridHighlights();
+        document.querySelector('.plant-card.active')?.classList.remove('active');
+        document.querySelector('.bowling-nut-card.active')?.classList.remove('active');
+        grid.classList.remove('placing');
+    });
+
+    function endGame(isWin) {
+        gameState = 'finished';
+        introMusic.pause();
+        gameMusic.pause();
+        Object.values(intervals).forEach(id => clearTimeout(id));
+        if (intervals.gameLoop) cancelAnimationFrame(intervals.gameLoop);
+        intervals = {};
+
+        if (isWin) {
+            let unlockMsg = `Świetna robota!`;
+            if (currentLevel.level !== 'Custom') {
+                const unlockable = currentLevel.unlocks;
+                if (unlockable === 'shovel' && !unlockedShovel) {
+                    unlockedShovel = true; localStorage.setItem('pvz_unlockedShovel', JSON.stringify(true)); unlockMsg = `Odblokowano nowe narzędzie: Łopata!`;
+                } else if (unlockable && !unlockedPlants.includes(unlockable)) {
+                    unlockedPlants.push(unlockable); localStorage.setItem('pvz_unlockedPlants', JSON.stringify(unlockedPlants)); unlockMsg = `Odblokowano nową roślinę: ${unlockable}!`;
+                }
+
+                if (currentLevel.level === maxLevelUnlocked && levels.find(l => l.level === maxLevelUnlocked + 1)) {
+                    maxLevelUnlocked++; localStorage.setItem('pvz_maxLevel', maxLevelUnlocked); winScreen.querySelector('#winTitle').textContent = "WYGRANA!";
+                } else {
+                     winScreen.querySelector('#winTitle').textContent = "Poziom Ukończony!";
+                }
+            } else {
+                 winScreen.querySelector('#winTitle').textContent = "WYGRANA!";
+            }
+
+            winScreen.querySelector('#winMessage').textContent = unlockMsg;
+            winScreen.style.display = 'flex';
+        } else {
+            showAlert('PRZEGRANA!', "Zombie zjadły twój mózg!", initMenu);
+        }
+    }
+
+    function updateZombies() {
+        zombies = zombies.filter(z => z.hp > 0);
+        zombies.forEach(zombie => {
+            // Logika spowolnienia na początku
+            if (zombie.slowTimer > 0) {
+                zombie.slowTimer--;
+                if (zombie.slowTimer === 0) {
+                    zombie.isSlowed = false;
+                    if (!zombie.isJumping) {
+                       zombie.speed = zombie.baseSpeed;
+                    }
+                }
+            }
+            
+            // GŁÓWNA ZMIANA: Rozdzielenie logiki na stan skakania i nieskakania
+            if (zombie.isJumping) {
+                // Ta część obsługuje animację, gdy zombie JUŻ JEST w powietrzu
+                zombie.jumpProgress += 1 / JUMP_DURATION_FRAMES;
+                
+                if (zombie.jumpProgress >= 1) {
+                    // Koniec skoku
+                    zombie.isJumping = false;
+                    zombie.hasPole = false;
+                    zombie.baseSpeed = ZOMBIE_SPEED; 
+                    zombie.speed = zombie.isSlowed ? zombie.baseSpeed * 0.5 : zombie.baseSpeed;
+                    zombie.x = zombie.jumpTargetX;
+                    zombie.y = zombie.baseY;
+                } else {
+                    // Skok w trakcie
+                    zombie.x = zombie.jumpStartX - (zombie.jumpStartX - zombie.jumpTargetX) * zombie.jumpProgress;
+                    const verticalProgress = 4 * zombie.jumpProgress * (1 - zombie.jumpProgress);
+                    zombie.y = zombie.baseY - JUMP_HEIGHT * verticalProgress;
+                }
+            } else {
+                // Ta część obsługuje wszystko inne (chodzenie, jedzenie, WYWOŁANIE skoku)
+                if (zombie.type === 'conehead' && zombie.hp <= zombieData.normal.hp) {
+                    zombie.type = 'normal';
+                }
+
+                let isEating = false;
+                const gridCellWidth = grid.clientWidth / COLS;
+
+                // POPRAWIONA LOGIKA WYWOŁANIA SKOKU
+                if (zombie.type === 'polevaulter' && zombie.hasPole) {
+                    // Znajdź wszystkie rośliny w tym rzędzie
+                    const plantsInLane = plants.filter(p => p.row === zombie.row);
+
+                    if (plantsInLane.length > 0) {
+                        // Posortuj je, by znaleźć tę najbardziej na prawo (najbliższą zombie)
+                        plantsInLane.sort((a, b) => b.col - a.col);
+                        const targetPlant = plantsInLane[0];
+                        const plantX = grid.offsetLeft + targetPlant.col * gridCellWidth;
+                        
+                        // POPRAWIONY WARUNEK: Zacznij skok, gdy zombie będzie bliżej
+                        if (zombie.x < plantX + gridCellWidth * 0.8) { 
+                            zombie.isJumping = true;
+                            zombie.jumpProgress = 0;
+                            zombie.jumpStartX = zombie.x;
+                            zombie.jumpTargetX = plantX - 10; // Wyląduj 10px za rośliną
+                            return; // WAŻNE: Przerwij dalsze przetwarzanie tego zombie w tej klatce
+                        }
+                    }
+                } 
+                
+                // Logika jedzenia (uruchomi się tylko, jeśli nie zaczął skakać)
+                for (const plant of plants) {
+                    if (plant.row === zombie.row) {
+                        const plantX = grid.offsetLeft + plant.col * gridCellWidth;
+                        const plantHitboxStart = plantX;
+                        const plantHitboxEnd = plantX + gridCellWidth * 0.8;
+                        if (zombie.x < plantHitboxEnd && zombie.x > plantHitboxStart) {
+                            if (plant.id === 'potatomine' && plant.isArmed) {
+                                createPotatoMineExplosion(plant);
+                                zombie.hp = 0;
+                                plant.hp = 0;
+                                isEating = false;
+                                break;
+                            } else {
+                                isEating = true;
+                                plant.hp -= ZOMBIE_EAT_DAMAGE_PER_SECOND / 60;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Logika chodzenia (uruchomi się tylko, jeśli nie je i nie skacze)
+                if (!isEating) {
+                    zombie.x -= zombie.speed;
+                }
+
+                if (zombie.x < grid.offsetLeft - 30) {
+                    endGame(false);
+                }
+            }
+        });
+    }
+
+    function updatePlants() {
+        const nextPlants = [];
+        plants.forEach(p => {
+            let keepPlant = true;
+            if (p.id === 'cherrybomb' && p.fuse !== undefined) {
+                p.fuse--; if (p.fuse <= 0) { triggerCherryBombExplosion(p.row, p.col); keepPlant = false; }
+            } else if (p.id === 'potatomine' && !p.isArmed) {
+                p.armingProgress++;
+                if (p.armingProgress >= plantData.potatomine.armingTime) {
+                    p.isArmed = true;
+                }
+            } else {
+                p.cooldown = Math.max(0, p.cooldown - 1);
+                if (p.cooldown === 0) {
+                    const config = plantData[p.id];
+                    if (config.type === 'shooter' && zombies.some(z => z.row === p.row && !z.isJumping)) { // Poprawka: nie strzelaj, gdy zombie jest poza planszą lub skacze
+                        const cell = grid.querySelector(`[data-row='${p.row}'][data-col='${p.col}']`);
+                        const projectileType = config.projectileType || 'normal';
+                        bullets.push({ row: p.row, x: cell.offsetLeft + grid.offsetLeft + cell.offsetWidth - 20, y: cell.offsetTop + grid.offsetTop + cell.offsetHeight / 2 - 25, speed: 5, type: projectileType });
+                        p.cooldown = config.cooldown;
+
+                        if (Math.random() < 0.5) {
+                            peashooterSound1.currentTime = 0;
+                            peashooterSound1.play();
+                        } else {
+                            peashooterSound2.currentTime = 0;
+                            peashooterSound2.play();
+                        }
+
+                    } else if (config.type === 'producer') {
+                        const cell = grid.querySelector(`[data-row='${p.row}'][data-col='${p.col}']`);
+                        const angle = Math.random() * 2 * Math.PI, radius = Math.random() * 40;
+                        const offsetX = Math.cos(angle) * radius, offsetY = Math.sin(angle) * radius;
+                        const spawnX = cell.offsetLeft + grid.offsetLeft + (cell.offsetWidth / 2) + offsetX, spawnY = cell.offsetTop + grid.offsetTop + (cell.offsetHeight / 2) + offsetY;
+                        createCollectibleSun(spawnX, spawnY); p.cooldown = config.cooldown;
+                    }
+                }
+            }
+            if (p.hp <= 0) keepPlant = false;
+            if (keepPlant) nextPlants.push(p);
+        });
+        plants = nextPlants;
+    }
+
+    function updateBullets() {
+        bullets = bullets.filter((b, bi) => {
+            b.x += b.speed;
+            if (b.x > grid.offsetLeft + grid.clientWidth) return false;
+
+            for (const z of zombies) {
+                if (z.isJumping) continue;
+
+                const z_config = zombieData[z.type];
+                let hitbox_to_use;
+                if (z.type === 'polevaulter') {
+                    hitbox_to_use = z.hasPole ? z_config.hitbox_pole : z_config.hitbox_no_pole;
+                } else {
+                    hitbox_to_use = z_config.hitbox;
+                }
+
+                if (!hitbox_to_use) continue;
+
+                const zhb = {
+                    x: z.x + hitbox_to_use.x,
+                    y: z.y + hitbox_to_use.y,
+                    width: hitbox_to_use.width,
+                    height: hitbox_to_use.height
+                };
+
+                const bhb = {
+                    x: b.x + 15, y: b.y + 15,
+                    width: 20, height: 20
+                };
+                
+                if (bhb.x < zhb.x + zhb.width &&
+                    bhb.x + bhb.width > zhb.x &&
+                    bhb.y < zhb.y + zhb.height &&
+                    bhb.y + bhb.height > zhb.y) 
+                {
+                    if (b.type === 'snow') {
+                        z.hp -= 10;
+                        if (!z.isSlowed) {
+                            snowHitSound.cloneNode().play();
+                        }
+                        z.isSlowed = true;
+                        z.slowTimer = SLOW_DURATION_FRAMES;
+                        z.speed = z.baseSpeed * 0.5;
+                    } else {
+                        z.hp -= 20;
+                        const rand = Math.floor(Math.random() * 3);
+                        if (rand === 0) { peaHitSound.cloneNode().play(); } 
+                        else if (rand === 1) { peaHitSoundCritical.cloneNode().play(); } 
+                        else { peaHitSoundSuperCritical.cloneNode().play(); }
+                    }
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
+    function updateBowlingNuts() {
+        const cellHeight = grid.clientHeight / 5;
+        const cellWidth = grid.clientWidth / COLS;
+        const nutHeight = cellHeight * 0.8;
+        const bounceSpeed = 4;
+
+        bowlingNuts.forEach(nut => {
+            if (nut.exploded) return;
+
+            nut.x += nut.speedX;
+            nut.y += nut.speedY;
+
+            if ((nut.y <= grid.offsetTop && nut.speedY < 0)) {
+                nut.speedY = bounceSpeed;
+            }
+            if ((nut.y + nutHeight >= grid.offsetTop + grid.clientHeight && nut.speedY > 0)) {
+                nut.speedY = -bounceSpeed;
+            }
+
+            for (const z of zombies) {
+                const zombieRowTop = grid.offsetTop + z.row * cellHeight;
+                const zombieRowBottom = zombieRowTop + cellHeight;
+
+                if (
+                    !z.hitBy.includes(nut.id) &&
+                    nut.x + cellWidth * 0.8 > z.x && nut.x < z.x + cellWidth &&
+                    nut.y + nutHeight > zombieRowTop && nut.y < zombieRowBottom
+                ) {
+                    z.hitBy.push(nut.id);
+
+                    if (nut.type === 'explodonut') {
+                        const zombieCol = Math.floor((z.x - grid.offsetLeft) / cellWidth);
+                        triggerCherryBombExplosion(z.row, zombieCol);
+                        nut.exploded = true;
+                    } else {
+                        if (z.type === 'conehead' && z.hp > zombieData.normal.hp) {
+                             z.hp = zombieData.normal.hp;
+                        } else {
+                            z.hp = 0;
+                        }
+
+                        const nutCurrentRow = Math.floor((nut.y - grid.offsetTop + nutHeight / 2) / cellHeight);
+
+                        if (nutCurrentRow <= 0) {
+                            nut.speedY = bounceSpeed;
+                        } else if (nutCurrentRow >= 4) {
+                            nut.speedY = -bounceSpeed;
+                        } else {
+                            nut.speedY = (nut.speedY !== 0) ? -nut.speedY : (Math.random() < 0.5 ? bounceSpeed : -bounceSpeed);
+                        }
+                    }
+                    break;
+                }
+            }
+        });
+        bowlingNuts = bowlingNuts.filter(n => !n.exploded && n.x < window.innerWidth);
+    }
+
+
+    function updateCooldowns() { for (const plantId in plantCardCooldowns) { if (plantCardCooldowns[plantId] > 0) plantCardCooldowns[plantId]--; } }
+
+    function renderAll() {
+        document.querySelectorAll('.plant, .zombie, .bullet, .bowling-nut, .debug-hitbox').forEach(e => e.remove());
+        grid.querySelectorAll('img.plant').forEach(e => e.remove());
+        
+        plants.forEach(p => {
+            const cell = grid.querySelector(`[data-row='${p.row}'][data-col='${p.col}']`);
+            if (cell) {
+                const config = plantData[p.id];
+                const plantEl = document.createElement('img');
+                let imgSrc = config.image;
+
+                if (p.id === 'wallnut') {
+                    const hpPercentage = p.hp / config.hp;
+                    if (hpPercentage < 0.33) imgSrc = config.cracked2_image;
+                    else if (hpPercentage < 0.66) imgSrc = config.cracked1_image;
+                } else if (p.id === 'potatomine') {
+                    imgSrc = p.isArmed ? config.armed_image : config.image;
+                }
+
+                plantEl.src = imgSrc;
+                plantEl.className = 'plant';
+                plantEl.style.width = '80%';
+                plantEl.style.height = '80%';
+                plantEl.style.margin = '10%';
+                cell.appendChild(plantEl);
+            }
+        });
+        
+        zombies.forEach(z => {
+            const zombieEl = document.createElement('img');
+            const config = zombieData[z.type];
+
+            if (z.type === 'polevaulter' && !z.hasPole) {
+                zombieEl.src = config.imageNoPole;
+            } else {
+                 zombieEl.src = config.image;
+            }
+
+            zombieEl.className = 'zombie';
+            zombieEl.style.left = z.x + 'px';
+            zombieEl.style.top = z.y + 'px';
+            zombieEl.style.zIndex = 5 + z.row;
+
+            zombieEl.style.filter = 'none';
+            if (z.isSlowed) {
+                if (z.slowTimer <= 180) { // 3 sekundy (180 klatek)
+                    zombieEl.style.filter = 'hue-rotate(180deg) brightness(1.5) saturate(1.5)';
+                } else {
+                    zombieEl.style.filter = 'hue-rotate(180deg) brightness(1.1)';
+                }
+            }
+
+            const baseHeight = grid.clientHeight / 5;
+            let zombieHeight = baseHeight;
+
+            if (z.type === 'conehead') {
+                zombieHeight += 40;
+                zombieEl.style.top = (z.y - 40) + 'px';
+            }
+             if (z.type === 'polevaulter' && z.hasPole) {
+                 zombieHeight *= 1.1;
+             }
+
+            zombieEl.style.height = zombieHeight + 'px';
+            panGameView.appendChild(zombieEl);
+
+            if (DEBUG_MODE) {
+                let hitbox_to_use;
+                if (z.type === 'polevaulter') {
+                    hitbox_to_use = z.hasPole ? config.hitbox_pole : config.hitbox_no_pole;
+                } else {
+                    hitbox_to_use = config.hitbox;
+                }
+                if (hitbox_to_use) {
+                    const hb = document.createElement('div');
+                    hb.className = 'debug-hitbox';
+                    hb.style.left = `${z.x + hitbox_to_use.x}px`;
+                    hb.style.top = `${z.y + hitbox_to_use.y}px`;
+                    hb.style.width = `${hitbox_to_use.width}px`;
+                    hb.style.height = `${hitbox_to_use.height}px`;
+                    panGameView.appendChild(hb);
+                }
+            }
+        });
+        
+        bullets.forEach(b => { 
+            const bulletEl = document.createElement('div'); 
+            bulletEl.className = 'bullet'; 
+            if (b.type === 'snow') {
+                bulletEl.style.backgroundImage = "url('https://i.ibb.co/Kcg3qyXp/Projectile-Snow-Pea.jpeg')";
+            } else {
+                bulletEl.style.backgroundImage = "url('https://i.ibb.co/wFkY6vRZ/Projectile-Pea.jpeg')";
+            }
+            bulletEl.style.left = b.x + 'px'; 
+            bulletEl.style.top = b.y + 'px'; 
+            bulletEl.style.zIndex = 10; 
+            panGameView.appendChild(bulletEl);
+
+            if (DEBUG_MODE) {
+                const hb = document.createElement('div');
+                hb.className = 'debug-hitbox';
+                hb.style.left = `${b.x + 15}px`;
+                hb.style.top = `${b.y + 15}px`;
+                hb.style.width = '20px';
+                hb.style.height = '20px';
+                panGameView.appendChild(hb);
+            }
+        });
+
+        bowlingNuts.forEach(n => { const nutEl = document.createElement('img'); nutEl.src = plantData[n.type].image; nutEl.className = 'bowling-nut'; nutEl.style.left = n.x + 'px'; nutEl.style.top = n.y + 'px'; nutEl.style.height = (grid.clientHeight / 5) * 0.8 + 'px'; nutEl.style.width = (grid.clientHeight / 5) * 0.8 + 'px'; nutEl.style.zIndex = 10 + Math.floor((n.y - grid.offsetTop)/(grid.clientHeight/5)); game.appendChild(nutEl); });
+    }
+
+
+    function createGrid() { grid.innerHTML = ''; for (let r = 0; r < 5; r++) for (let c = 0; c < COLS; c++) { const cell = document.createElement('div'); cell.className = 'grid-cell'; cell.dataset.row = r; cell.dataset.col = c; grid.appendChild(cell); } }
+    function setupPlantSelector() {
+        plantSelector.innerHTML = '';
+        unlockedPlants.forEach(plantId => {
+            const config = plantData[plantId]; if (!config.cost) return;
+            const card = document.createElement('div'); card.className = 'plant-card'; card.dataset.plant = plantId; 
+            card.style.backgroundImage = `url(${config.card_image || config.image})`; 
+            card.title = `${plantId} (Koszt: ${config.cost})`;
+            const costEl = document.createElement('span'); costEl.className = 'cost'; costEl.textContent = config.cost; card.appendChild(costEl);
+            const cooldownOverlay = document.createElement('div'); cooldownOverlay.className = 'cooldown-overlay'; card.appendChild(cooldownOverlay);
+            card.onclick = () => selectPlantToPlace(plantId); plantSelector.appendChild(card);
+        });
+    }
+    function updatePlantCards() {
+        document.querySelectorAll('.plant-card').forEach(card => {
+            const plantId = card.dataset.plant;
+            const config = plantData[plantId];
+            const cooldown = plantCardCooldowns[plantId] || 0;
+            const isUnaffordable = !currentLevel.customSettings?.unlimitedSun && sunPoints < config.cost;
+            const cooldownsActive = currentLevel.customSettings?.plantCooldownsActive ?? true;
+            const isOnCooldown = cooldownsActive && cooldown > 0;
+            card.classList.toggle('disabled', isUnaffordable || isOnCooldown);
+            const overlay = card.querySelector('.cooldown-overlay');
+            if (isOnCooldown) overlay.style.height = `${(cooldown / config.recharge) * 100}%`; else overlay.style.height = '0%';
+        });
+    }
+    function highlightValidCells() {
+        grid.querySelectorAll('.grid-cell').forEach(cell => {
+            const row = parseInt(cell.dataset.row), col = parseInt(cell.dataset.col); let isInvalid = true;
+            if (currentLevel.gameMode === 'bowling') { isInvalid = col >= 3;
+            } else if (placingPlantType) {
+                const isAllowedRow = currentLevel.allowedRows.includes(row); const isOccupied = plants.some(p => p.row === row && p.col === col); isInvalid = !isAllowedRow || isOccupied;
+            } else { isInvalid = false; }
+            cell.classList.toggle('disabled', isInvalid);
+        });
+    }
+    function resetGridHighlights() { grid.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('disabled')); }
+
+    function createPotatoMineExplosion(plant) {
+        const explosion = document.createElement('div');
+        explosion.className = 'explosion';
+        const explosionSize = (grid.clientHeight / 5) * 1.5;
+        explosion.style.width = `${explosionSize}px`;
+        explosion.style.height = `${explosionSize}px`;
+        explosion.style.left = `${grid.offsetLeft + (plant.col * grid.clientWidth / COLS) + (grid.clientWidth / COLS / 2) - explosionSize/2}px`;
+        explosion.style.top = `${grid.offsetTop + (plant.row * grid.clientHeight / 5) + (grid.clientHeight / 5 / 2) - explosionSize/2}px`;
+        panGameView.appendChild(explosion);
+        setTimeout(() => explosion.remove(), 400);
+    }
+
+    function triggerCherryBombExplosion(row, col) {
+        const explosion = document.createElement('div'); explosion.className = 'explosion'; const explosionSize = (grid.clientHeight / 5) * 3;
+        explosion.style.width = `${explosionSize}px`; explosion.style.height = `${explosionSize}px`;
+        explosion.style.left = `${grid.offsetLeft + (col * grid.clientWidth / COLS) + (grid.clientWidth / COLS / 2) - explosionSize/2}px`;
+        explosion.style.top = `${grid.offsetTop + (row * grid.clientHeight / 5) + (grid.clientHeight / 5 / 2) - explosionSize/2}px`;
+        panGameView.appendChild(explosion); setTimeout(() => explosion.remove(), 400);
+        zombies.forEach(z => {
+            if (z.row >= row - 1 && z.row <= row + 1) {
+                const zombieCol = Math.floor((z.x - grid.offsetLeft) / (grid.clientWidth / COLS));
+                if (zombieCol >= col - 1 && zombieCol <= col + 1) z.hp = 0;
+            }
+        });
+    }
+
+    function updateSunPoints() {
+        if (currentLevel.customSettings?.unlimitedSun) {
+            sunPointsEl.textContent = 'Słońca: ∞';
+        } else {
+            sunPointsEl.textContent = `Słońca: ${sunPoints}`;
+        }
+    }
+
+    function spawnSun() { createCollectibleSun(grid.offsetLeft + Math.random() * (grid.clientWidth - 120), -50); }
+    function createCollectibleSun(x, y) {
+        const sun = document.createElement('div'); sun.className = 'sun';
+        sun.style.left = x + 'px'; sun.style.top = y + 'px'; sun.style.zIndex = 20; panGameView.appendChild(sun);
+        let fallInterval = null;
+        if (y < 0) {
+            let fallTargetY = grid.offsetTop + Math.random() * (grid.clientHeight - 120);
+            fallInterval = setInterval(() => {
+                let currentTop = parseInt(sun.style.top);
+                if (currentTop >= fallTargetY) { clearInterval(fallInterval); setTimeout(() => { if(sun.parentNode) sun.remove() }, 3000);
+                } else sun.style.top = (currentTop + 2) + 'px';
+            }, 16);
+        } else { sun.classList.add('from-plant'); setTimeout(() => { if(sun.parentNode) sun.remove() }, 5000); }
+        sun.addEventListener('click', () => { sunPoints += 25; updateSunPoints(); if (fallInterval) clearInterval(fallInterval); if(sun.parentNode) sun.remove(); }, { once: true });
+    }
+
+    function spawnSpecificZombie(zombieType) {
+        if (!zombieData[zombieType]) return;
+
+        if (!firstZombieSpawned) { 
+            zombieGroanSound.play().catch(e => console.error("Błąd odtwarzania dźwięku zombie:", e)); 
+            firstZombieSpawned = true;
+        }
+        
+        const row = currentLevel.allowedRows[Math.floor(Math.random() * currentLevel.allowedRows.length)];
+        let baseY = (row * (grid.clientHeight / 5)) + grid.offsetTop;
+        
+        const currentSpeed = (zombieType === 'polevaulter') ? ZOMBIE_SPEED * 1.5 : ZOMBIE_SPEED;
+
+        const newZombie = {
+            type: zombieType, row: row, x: window.innerWidth, y: baseY, baseY: baseY,
+            hp: zombieData[zombieType].hp, 
+            speed: currentSpeed, 
+            baseSpeed: currentSpeed,
+            isSlowed: false,
+            slowTimer: 0,
+            hitBy: []
+        };
+        
+        if (zombieType === 'polevaulter') {
+            newZombie.hasPole = true;
+            newZombie.isJumping = false; 
+            newZombie.jumpProgress = 0;
+        }
+        zombies.push(newZombie);
+    }
+    
+    function spawnZombie(zombiePool) {
+        let zombieType;
+        
+        if (!firstZombieSpawned) {
+            zombieType = 'normal';
+        } else if (zombiePool) {
+            const zombieTypes = Object.keys(zombiePool);
+            const totalWeight = zombieTypes.reduce((sum, type) => sum + zombiePool[type], 0);
+            let random = Math.random() * totalWeight;
+            for (const type of zombieTypes) {
+                random -= zombiePool[type];
+                if (random <= 0) {
+                    zombieType = type;
+                    break;
+                }
+            }
+            if (!zombieType) zombieType = zombieTypes[0];
+        } else {
+            const availableZombies = Object.keys(defaultZombiePool).filter(type => zombieData[type].unlockLevel <= currentLevel.level);
+            const currentPool = {};
+            availableZombies.forEach(type => { currentPool[type] = defaultZombiePool[type]; });
+            
+            const totalWeight = Object.values(currentPool).reduce((sum, weight) => sum + weight, 0);
+            let random = Math.random() * totalWeight;
+
+            for (const type in currentPool) {
+                random -= currentPool[type];
+                if (random <= 0) {
+                    zombieType = type;
+                    break;
+                }
+            }
+        }
+        
+        spawnSpecificZombie(zombieType);
+    }
+
+    function updateTimer() {
+        elapsedTime++; document.getElementById('progressBar').style.width = `${(elapsedTime / LEVEL_DURATION_SECONDS) * 100}%`;
+        waveFlags.forEach(flag => { if (!flag.triggered && elapsedTime >= flag.time) { flag.triggered = true; triggerWave(flag.type); } });
+        if (elapsedTime >= LEVEL_DURATION_SECONDS) { 
+            isFinalWave = true;
+            clearTimeout(intervals.zombieSpawner);
+            Object.keys(intervals).filter(k => k.startsWith('zombie_')).forEach(k => clearInterval(intervals[k]));
+            clearInterval(intervals.timer); 
+        }
+    }
+    function setupWaves() {
+        progressContainer.querySelectorAll('.wave-flag').forEach(f => f.remove());
+        waveFlags = [{ time: Math.floor(LEVEL_DURATION_SECONDS * 0.45), type: 'large', triggered: false }];
+        if (currentLevel.level > 1) waveFlags.push({ time: Math.floor(LEVEL_DURATION_SECONDS * 0.85), type: 'huge', triggered: false });
+        waveFlags.forEach(flag => { const flagEl = document.createElement('div'); flagEl.className = 'wave-flag'; flagEl.style.left = `${(flag.time / LEVEL_DURATION_SECONDS) * 100}%`; progressContainer.appendChild(flagEl); });
+    }
+
+    function triggerWave(type) {
+        waveAlertSound.currentTime = 0;
+        waveAlertSound.play().catch(e => console.error("Błąd odtwarzania dźwięku fali:", e));
+
+        const announcementText = (type === 'large') ? "Wielka Fala przygotuj się albo giń!" : "Ogromna fala! Apokalipsa.";
+        waveAnnouncementEl.textContent = announcementText; waveAnnouncementEl.classList.add('show');
+        setTimeout(() => waveAnnouncementEl.classList.remove('show'), 4000);
+        const waveSize = (type === 'large') ? 5 : 8;
+        for (let i = 0; i < waveSize; i++) {
+            setTimeout(() => {
+                const pool = currentLevel.customSettings?.defaultZombiePool || null;
+                spawnZombie(pool);
+            }, i * 400);
+        }
+    }
+
+    function updateSettingsUI() {
+        const container = document.getElementById('zombieSettingsContainer');
+        const list = document.getElementById('zombieSettingsList');
+        const selectedZombies = document.querySelectorAll('#zombieSelection input:checked');
+
+        list.innerHTML = '';
+
+        if (selectedZombies.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+        
+        container.style.display = 'block';
+
+        selectedZombies.forEach(checkbox => {
+            const type = checkbox.value;
+            const data = zombieData[type];
+            
+            const row = document.createElement('div');
+            row.className = 'zombie-settings-row';
+            row.innerHTML = `
+                <div>
+                    <label for="percent-${type}">${data.name}</label>
+                    <input type="number" id="percent-${type}" data-zombie-type="${type}" value="50" min="0">
+                    <span>%</span>
+                </div>
+                <div class="timer-options">
+                    <label>Tempo:</label>
+                    <label><input type="radio" name="timer-${type}" value="default" checked> Domyślne</label>
+                    <label><input type="radio" name="timer-${type}" value="custom"> Custom</label>
+                    <span class="timer-input">
+                        <input type="number" id="timer-val-${type}" value="10" min="1"> s
+                    </span>
+                </div>
+            `;
+            list.appendChild(row);
+
+            const timerRadios = row.querySelectorAll(`input[name="timer-${type}"]`);
+            const customInputSpan = row.querySelector('.timer-input');
+            timerRadios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    customInputSpan.style.display = radio.value === 'custom' ? 'inline-block' : 'none';
+                });
+            });
+        });
+    }
+    
+    function populateCustomScreen() {
+        const zombieContainer = document.getElementById('zombieSelection');
+        zombieContainer.innerHTML = '';
+        for (const type in zombieData) {
+            const data = zombieData[type];
+            const isUnlocked = maxLevelUnlocked >= data.unlockLevel;
+
+            const label = document.createElement('label');
+            label.className = 'image-choice';
+
+            const displayName = isUnlocked ? data.name : '???';
+            const isCheckedByDefault = type === 'normal' && isUnlocked; 
+            const checkboxState = isUnlocked ? (isCheckedByDefault ? 'checked' : '') : 'disabled';
+
+            label.innerHTML = `
+                <input type="checkbox" name="zombie_select" value="${type}" ${checkboxState}>
+                <img src="${data.image}" alt="${displayName}">
+                <span>${displayName}</span>
+            `;
+            
+            if (!isUnlocked) {
+                label.classList.add('locked');
+            }
+
+            const checkbox = label.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener('change', updateSettingsUI);
+            
+            zombieContainer.appendChild(label);
+        }
+
+        const lawnContainer = document.getElementById('lawnSelection');
+        lawnContainer.innerHTML = '';
+        const lawnOptions = [
+            { id: 'middle', name: 'Środkowa', bg: levels.find(l => l.level === 1).background, unlockLevel: 1 },
+            { id: 'three', name: 'Trzy Środkowe', bg: levels.find(l => l.level === 2).background, unlockLevel: 2 },
+            { id: 'all', name: 'Wszystkie', bg: levels.find(l => l.level === 4).background, unlockLevel: 4 }
+        ];
+
+        let firstUnlockedRadio = true;
+        lawnOptions.forEach(opt => {
+            const isUnlocked = maxLevelUnlocked >= opt.unlockLevel;
+            const label = document.createElement('label');
+            label.className = 'image-choice';
+
+            const displayName = isUnlocked ? opt.name : '???';
+            const radioState = isUnlocked ? (firstUnlockedRadio ? 'checked' : '') : 'disabled';
+            
+            label.innerHTML = `
+                <input type="radio" name="lawnLayout" value="${opt.id}" ${radioState}>
+                <div class="lawn-preview" style="background-image: url('${isUnlocked ? opt.bg : ''}')"></div>
+                <span>${displayName}</span>
+            `;
+
+            if (isUnlocked && firstUnlockedRadio) {
+                firstUnlockedRadio = false;
+            }
+
+            if (!isUnlocked) {
+                label.classList.add('locked');
+            }
+            lawnContainer.appendChild(label);
+        });
+
+        updateSettingsUI();
+    }
+    
+    function showAlert(title, message, callback) {
+        alertTitleEl.textContent = title;
+        alertMessageEl.textContent = message;
+        alertCallback = callback || null;
+        customAlert.style.display = 'flex';
+    }
+
+
+    // --- LOGIKA ŁADOWANIA ZASOBÓW ---
+    function preloadAssets() {
+        const assetsToLoad = [];
+        for (const key in plantData) {
+            if (plantData[key].image) assetsToLoad.push(plantData[key].image);
+            if (plantData[key].card_image) assetsToLoad.push(plantData[key].card_image);
+            if (plantData[key].cracked1_image) assetsToLoad.push(plantData[key].cracked1_image);
+            if (plantData[key].cracked2_image) assetsToLoad.push(plantData[key].cracked2_image);
+            if (plantData[key].armed_image) assetsToLoad.push(plantData[key].armed_image);
+        }
+        for (const key in zombieData) {
+            if (zombieData[key].image) assetsToLoad.push(zombieData[key].image);
+            if (zombieData[key].imageNoPole) assetsToLoad.push(zombieData[key].imageNoPole);
+        }
+        levels.forEach(l => assetsToLoad.push(l.background));
+        assetsToLoad.push('https://i.imgur.com/398bA3t.jpeg');
+        assetsToLoad.push('https://i.imgur.com/YuotNNj.jpeg');
+        assetsToLoad.push('https://i.ibb.co/tp3WX5Pt/Shovel2.jpeg');
+        assetsToLoad.push('https://i.ibb.co/wFkY6vRZ/Projectile-Pea.jpeg');
+        assetsToLoad.push('https://i.ibb.co/SXKRkN8n/Sun-PvZ2.jpeg');
+        assetsToLoad.push('https://i.imgur.com/KGDYd1w.png');
+        assetsToLoad.push('https://i.ibb.co/Kcg3qyXp/Projectile-Snow-Pea.jpeg');
+        assetsToLoad.push(menuMusic.src, gameMusic.src, introMusic.src, peaHitSound.src, peaHitSoundCritical.src, peaHitSoundSuperCritical.src, zombieGroanSound.src, randomZombieSound.src, waveAlertSound.src, peashooterSound1.src, peashooterSound2.src, snowHitSound.src);
+
+        let assetsLoaded = 0;
+        const totalAssets = assetsToLoad.length;
+        const progressEl = document.getElementById('loadingProgress');
+
+        function assetLoaded() {
+            assetsLoaded++;
+            const percentage = Math.round((assetsLoaded / totalAssets) * 100);
+            progressEl.textContent = `${percentage}%`;
+            if (assetsLoaded === totalAssets) {
+                initMenu();
+            }
+        }
+
+        assetsToLoad.forEach(url => {
+            if (url.match(/\.(jpeg|jpg|png|gif)/)) {
+                const img = new Image();
+                img.src = url;
+                img.onload = assetLoaded;
+                img.onerror = assetLoaded;
+            } else if (url.match(/\.mp3/)) {
+                const audio = new Audio();
+                audio.src = url;
+                audio.addEventListener('canplaythrough', assetLoaded, { once: true });
+                audio.addEventListener('error', assetLoaded, { once: true });
+            }
+        });
+    }
+
+    // --- START APLIKACJI I OBSŁUGA PRZYCISKÓW ---
+    window.onload = preloadAssets;
+    backToMenuFromCustomBtn.addEventListener('click', initMenu);
+    backToMenuBtn.addEventListener('click', initMenu);
+    alertCloseBtn.addEventListener('click', () => {
+        customAlert.style.display = 'none';
+        if (alertCallback) {
+            alertCallback();
+            alertCallback = null;
+        }
+    });
+
+    startCustomGameBtn.addEventListener('click', () => {
+        const zombieWeights = {};
+        const zombieTimers = {};
+        const settingRows = document.querySelectorAll('#zombieSettingsList .zombie-settings-row');
+
+        if (settingRows.length === 0) {
+            showAlert('Błąd konfiguracji', 'Musisz wybrać co najmniej jednego zombie!');
+            return;
+        }
+        
+        let totalPercentage = 0;
+        let hasZeroPercent = false;
+
+        settingRows.forEach(row => {
+            const percentInput = row.querySelector('input[id^="percent-"]');
+            const type = percentInput.dataset.zombieType;
+            const weight = Number(percentInput.value);
+
+            if (!isNaN(weight)) {
+                if(weight <= 0) hasZeroPercent = true;
+                totalPercentage += weight;
+                zombieWeights[type] = weight;
+
+                const timerType = row.querySelector(`input[name="timer-${type}"]:checked`).value;
+                if(timerType === 'custom') {
+                    const timerValue = Number(row.querySelector(`#timer-val-${type}`).value);
+                    zombieTimers[type] = timerValue > 0 ? timerValue : 10;
+                } else {
+                    zombieTimers[type] = 'default';
+                }
+            }
+        });
+        
+        if (hasZeroPercent) {
+             showAlert('Błąd konfiguracji', 'Każdy wybrany zombie musi mieć szansę większą od 0%!');
+             return;
+        }
+        if (Math.round(totalPercentage) !== 100) {
+            showAlert('Błąd konfiguracji', `Suma szans musi wynosić 100%, a aktualnie wynosi ${totalPercentage}%.`);
+            return;
+        }
+        
+        const plantCooldownsActive = document.getElementById('plantCooldowns').checked;
+        const initialSun = parseInt(document.getElementById('customSun').value);
+        const unlimitedSun = document.getElementById('unlimitedSun').checked;
+        const duration = parseInt(document.getElementById('customDuration').value);
+        const layoutInput = document.querySelector('input[name="lawnLayout"]:checked');
+
+        if (!layoutInput) {
+            showAlert('Błąd konfiguracji', 'Musisz wybrać układ trawnika!');
+            return;
+        }
+        const layout = layoutInput.value;
+
+        let background, allowedRows;
+        switch (layout) {
+            case 'middle':
+                background = levels.find(l => l.level === 1).background; allowedRows = [2]; break;
+            case 'three':
+                background = levels.find(l => l.level === 3).background; allowedRows = [1, 2, 3]; break;
+            case 'all':
+                background = levels.find(l => l.level === 6).background; allowedRows = [0, 1, 2, 3, 4]; break;
+        }
+
+        const customConfig = {
+            level: 'Custom', background: background, allowedRows: allowedRows,
+            gameMode: 'normal', unlocks: null,
+            customSettings: {
+                zombieWeights: zombieWeights,
+                zombieTimers: zombieTimers,
+                sun: initialSun,
+                unlimitedSun: unlimitedSun,
+                duration: duration,
+                plantCooldownsActive: plantCooldownsActive
+            }
+        };
+
+        requestFullscreenAndStart(customConfig);
+    });
+
+  </script>
+</body>
+</html>
